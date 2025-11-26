@@ -13,53 +13,22 @@ import {
   Check,
   AlertCircle,
 } from "lucide-react";
-import axiosInstance from "../../lib/axios";
-
-// Mock data for UI demonstration
-const seedUsers = [
-  {
-    id: "1",
-    name: "John Doe",
-    email: "john.doe@guard.com",
-    role: { id: "1", name: "Admin" },
-    status: "active",
-    createdAt: "2024-01-15",
-    lastLogin: "2025-01-20 14:30",
-  },
-  {
-    id: "2",
-    name: "Jane Smith",
-    email: "jane.smith@guard.com",
-    role: { id: "2", name: "Manager" },
-    status: "active",
-    createdAt: "2024-02-20",
-    lastLogin: "2025-01-20 10:15",
-  },
-  {
-    id: "3",
-    name: "Bob Johnson",
-    email: "bob.johnson@guard.com",
-    role: { id: "3", name: "Operator" },
-    status: "inactive",
-    createdAt: "2024-03-10",
-    lastLogin: "2025-01-15 08:45",
-  },
-  {
-    id: "4",
-    name: "Alice Williams",
-    email: "alice.williams@guard.com",
-    role: { id: "2", name: "Manager" },
-    status: "active",
-    createdAt: "2024-04-05",
-    lastLogin: "2025-01-20 16:20",
-  },
-];
+import axiosInstance from "../../lib/axiosInstance";
+import { toDate } from "../../utils/helper/dateTimeHelper";
 
 const mockRoles = [
   { id: "1", name: "Admin" },
   { id: "2", name: "Manager" },
   { id: "3", name: "Operator" },
   { id: "4", name: "Viewer" },
+];
+
+// Static options for the extra checkbox dropdown in the Edit modal
+const mockEditOptions = [
+  { id: "can_view_reports", label: "Can view incident reports" },
+  { id: "can_manage_shifts", label: "Can manage guard shifts" },
+  { id: "can_export_data", label: "Can export data" },
+  { id: "receive_alerts", label: "Receives critical alerts" },
 ];
 
 const emptyUser = {
@@ -77,7 +46,7 @@ const statusColors = {
 };
 
 const UsersPage = () => {
-  const [users, setUsers] = useState(seedUsers);
+  const [users, setUsers] = useState(null);
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -103,42 +72,51 @@ const UsersPage = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
 
+  // Extra dropdown state for Edit modal
+  const [showEditOptionsDropdown, setShowEditOptionsDropdown] = useState(false);
+  const [selectedEditOptionIds, setSelectedEditOptionIds] = useState([]);
+
   // Form states
   const [userForm, setUserForm] = useState(emptyUser);
-  const [passwordForm, setPasswordForm] = useState({ password: "", confirmPassword: "" });
+  const [passwordForm, setPasswordForm] = useState({
+    password: "",
+    confirmPassword: "",
+  });
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [selectedUserIds, setSelectedUserIds] = useState([]);
 
   // Calculate filtered users
   const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
+    return users?.filter((user) => {
       const matchesQuery =
         !query ||
         user.name.toLowerCase().includes(query.toLowerCase()) ||
         user.email.toLowerCase().includes(query.toLowerCase());
       const matchesRole = roleFilter === "all" || user.role.id === roleFilter;
-      const matchesStatus = statusFilter === "all" || user.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "all" || user.status === statusFilter;
       return matchesQuery && matchesRole && matchesStatus;
     });
   }, [users, query, roleFilter, statusFilter]);
 
   // Pagination
-  const totalPages = Math.ceil(filteredUsers.length / pageSize);
+  const totalPages = Math.ceil(filteredUsers?.length / pageSize);
   const paginatedUsers = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
-    return filteredUsers.slice(start, start + pageSize);
+    return filteredUsers?.slice(start, start + pageSize);
   }, [filteredUsers, currentPage, pageSize]);
 
   // Calculate stats
   useMemo(() => {
     const newStats = {
-      total: users.length,
-      active: users.filter((u) => u.status === "active").length,
-      inactive: users.filter((u) => u.status === "inactive").length,
+      total: users?.length,
+      active: users?.filter((u) => u.status === "active").length,
+      inactive: users?.filter((u) => u.status === "inactive").length,
       byRole: {},
     };
-    users.forEach((user) => {
-      newStats.byRole[user.role.name] = (newStats.byRole[user.role.name] || 0) + 1;
+    users?.forEach((user) => {
+      newStats.byRole[user?.role?.name] =
+        (newStats?.byRole[user?.role?.name] || 0) + 1;
     });
     setStats(newStats);
   }, [users]);
@@ -149,9 +127,12 @@ const UsersPage = () => {
     setError("");
     try {
       // TODO: Replace with actual API call
-      // const response = await axiosInstance.get(`/api/users?page=${page}&limit=${limit}`);
-      // setUsers(response.data.data);
+      const response = await axiosInstance(
+        `/api/users?page=${page}&limit=${limit}`
+      );
+      setUsers(response.data.data?.users);
       // For now, using mock data
+      console.log(response, "res");
       setTimeout(() => setLoading(false), 500);
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to fetch users");
@@ -220,7 +201,8 @@ const UsersPage = () => {
             ? {
                 ...user,
                 ...userData,
-                role: mockRoles.find((r) => r.id === userData.roleId) || user.role,
+                role:
+                  mockRoles.find((r) => r.id === userData.roleId) || user.role,
               }
             : user
         )
@@ -327,10 +309,13 @@ const UsersPage = () => {
     setUserForm({
       name: user.name,
       email: user.email,
-      roleId: user.role.id,
-      status: user.status,
+      roleId: user?.Role?.id,
+      status: user?.status || null,
       password: "",
     });
+    // Reset extra edit options when opening the modal
+    setSelectedEditOptionIds([]);
+    setShowEditOptionsDropdown(false);
     setSelectedUserId(user.id);
     setShowEditModal(true);
     setError("");
@@ -354,7 +339,8 @@ const UsersPage = () => {
   };
 
   const handleRoleUpdate = (user) => {
-    setUserForm({ roleId: user.role.id });
+    console.log(user, "user");
+    setUserForm({ roleId: user.Role.id });
     setSelectedUserId(user.id);
     setShowRoleModal(true);
     setError("");
@@ -362,7 +348,12 @@ const UsersPage = () => {
 
   const handleSubmitCreate = (e) => {
     e.preventDefault();
-    if (!userForm.name || !userForm.email || !userForm.password || !userForm.roleId) {
+    if (
+      !userForm.name ||
+      !userForm.email ||
+      !userForm.password ||
+      !userForm.roleId
+    ) {
       setError("Please fill in all required fields");
       return;
     }
@@ -377,6 +368,12 @@ const UsersPage = () => {
     }
     const { password, ...updateData } = userForm;
     updateUser(selectedUserId, updateData);
+  };
+
+  const toggleEditOption = (id) => {
+    setSelectedEditOptionIds((prev) =>
+      prev.includes(id) ? prev.filter((optId) => optId !== id) : [...prev, id]
+    );
   };
 
   const handleSubmitPassword = (e) => {
@@ -560,7 +557,7 @@ const UsersPage = () => {
                   <input
                     type="checkbox"
                     checked={
-                      paginatedUsers.length > 0 &&
+                      paginatedUsers?.length > 0 &&
                       selectedUserIds.length === paginatedUsers.length
                     }
                     onChange={toggleSelectAll}
@@ -582,14 +579,14 @@ const UsersPage = () => {
                     Loading...
                   </td>
                 </tr>
-              ) : paginatedUsers.length === 0 ? (
+              ) : paginatedUsers?.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-10 text-center text-slate-500">
                     No users found. Create a new user to get started.
                   </td>
                 </tr>
               ) : (
-                paginatedUsers.map((user) => (
+                paginatedUsers?.map((user) => (
                   <tr key={user.id} className="hover:bg-slate-50">
                     <td className="py-4 pr-4">
                       <input
@@ -600,33 +597,38 @@ const UsersPage = () => {
                       />
                     </td>
                     <td className="py-4 pr-4">
-                      <p className="font-semibold text-slate-900">{user.name}</p>
+                      <p className="font-semibold text-slate-900 capitalize">
+                        {user.name}
+                      </p>
                     </td>
                     <td className="py-4 pr-4 text-slate-600">{user.email}</td>
                     <td className="py-4 pr-4">
                       <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                        {user.role.name}
+                        {user?.Role?.name}
                       </span>
                     </td>
                     <td className="py-4 pr-4">
                       <span
-                        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${statusColors[user.status] || statusColors.inactive}`}
+                        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${
+                          statusColors[user.status] || statusColors.inactive
+                        }`}
                       >
                         {user.status === "active" ? (
                           <Check className="size-3" />
                         ) : (
                           <X className="size-3" />
                         )}
-                        {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                        {/* {user?.status?.charAt(0)?.toUpperCase() + user?.status?.slice(1)} */}
                       </span>
                     </td>
                     <td className="py-4 pr-4 text-slate-500 text-xs">
-                      {user.lastLogin}
+                      {user?.createdAt?.split("T")?.[0]}
                     </td>
                     <td className="py-4 text-right">
                       <div className="inline-flex items-center gap-2">
                         <button
                           type="button"
+                          // disabled
                           onClick={() => handleEdit(user)}
                           className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400"
                           title="Edit user"
@@ -635,6 +637,7 @@ const UsersPage = () => {
                         </button>
                         <button
                           type="button"
+                          // disabled
                           onClick={() => handlePasswordUpdate(user.id)}
                           className="rounded-xl border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-600 hover:border-blue-400"
                           title="Update password"
@@ -643,6 +646,7 @@ const UsersPage = () => {
                         </button>
                         <button
                           type="button"
+                          // disabled
                           onClick={() => handleRoleUpdate(user)}
                           className="rounded-xl border border-purple-200 px-3 py-2 text-xs font-semibold text-purple-600 hover:border-purple-400"
                           title="Update role"
@@ -651,6 +655,7 @@ const UsersPage = () => {
                         </button>
                         <button
                           type="button"
+                          // disabled
                           onClick={() => handleDelete(user.id)}
                           className="rounded-xl border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-600 hover:border-rose-400"
                           title="Delete user"
@@ -688,7 +693,9 @@ const UsersPage = () => {
               </span>
               <button
                 type="button"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
                 disabled={currentPage === totalPages}
                 className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -710,7 +717,9 @@ const UsersPage = () => {
                 </div>
                 <div>
                   <h2 className="text-2xl font-semibold">Create new user</h2>
-                  <p className="text-sm text-slate-500">Add a new user to the system</p>
+                  <p className="text-sm text-slate-500">
+                    Add a new user to the system
+                  </p>
                 </div>
               </div>
               <button
@@ -751,7 +760,10 @@ const UsersPage = () => {
                     type="email"
                     value={userForm.email}
                     onChange={(e) =>
-                      setUserForm((prev) => ({ ...prev, email: e.target.value }))
+                      setUserForm((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
                     }
                     placeholder="john.doe@guard.com"
                     className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
@@ -766,7 +778,10 @@ const UsersPage = () => {
                     type="password"
                     value={userForm.password}
                     onChange={(e) =>
-                      setUserForm((prev) => ({ ...prev, password: e.target.value }))
+                      setUserForm((prev) => ({
+                        ...prev,
+                        password: e.target.value,
+                      }))
                     }
                     placeholder="••••••••"
                     className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
@@ -774,11 +789,16 @@ const UsersPage = () => {
                   />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-medium text-slate-600">Role *</span>
+                  <span className="text-sm font-medium text-slate-600">
+                    Role *
+                  </span>
                   <select
                     value={userForm.roleId}
                     onChange={(e) =>
-                      setUserForm((prev) => ({ ...prev, roleId: e.target.value }))
+                      setUserForm((prev) => ({
+                        ...prev,
+                        roleId: e.target.value,
+                      }))
                     }
                     className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
                     required
@@ -792,11 +812,16 @@ const UsersPage = () => {
                   </select>
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-medium text-slate-600">Status</span>
+                  <span className="text-sm font-medium text-slate-600">
+                    Status
+                  </span>
                   <select
                     value={userForm.status}
                     onChange={(e) =>
-                      setUserForm((prev) => ({ ...prev, status: e.target.value }))
+                      setUserForm((prev) => ({
+                        ...prev,
+                        status: e.target.value,
+                      }))
                     }
                     className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
                   >
@@ -805,6 +830,7 @@ const UsersPage = () => {
                     <option value="suspended">Suspended</option>
                   </select>
                 </label>
+                {/* Extra dropdown with checkbox options (static data) */}
               </div>
               <div className="flex items-center gap-3 pt-4">
                 <button
@@ -843,7 +869,9 @@ const UsersPage = () => {
                 </div>
                 <div>
                   <h2 className="text-2xl font-semibold">Edit user</h2>
-                  <p className="text-sm text-slate-500">Update user information</p>
+                  <p className="text-sm text-slate-500">
+                    Update user information
+                  </p>
                 </div>
               </div>
               <button
@@ -884,18 +912,26 @@ const UsersPage = () => {
                     type="email"
                     value={userForm.email}
                     onChange={(e) =>
-                      setUserForm((prev) => ({ ...prev, email: e.target.value }))
+                      setUserForm((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
                     }
                     className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
                     required
                   />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-medium text-slate-600">Role *</span>
+                  <span className="text-sm font-medium text-slate-600">
+                    Role *
+                  </span>
                   <select
                     value={userForm.roleId}
                     onChange={(e) =>
-                      setUserForm((prev) => ({ ...prev, roleId: e.target.value }))
+                      setUserForm((prev) => ({
+                        ...prev,
+                        roleId: e.target.value,
+                      }))
                     }
                     className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
                     required
@@ -909,11 +945,16 @@ const UsersPage = () => {
                   </select>
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-medium text-slate-600">Status</span>
+                  <span className="text-sm font-medium text-slate-600">
+                    Status
+                  </span>
                   <select
                     value={userForm.status}
                     onChange={(e) =>
-                      setUserForm((prev) => ({ ...prev, status: e.target.value }))
+                      setUserForm((prev) => ({
+                        ...prev,
+                        status: e.target.value,
+                      }))
                     }
                     className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
                   >
@@ -922,6 +963,49 @@ const UsersPage = () => {
                     <option value="suspended">Suspended</option>
                   </select>
                 </label>
+                <div className="space-y-2 md:col-span-2 relative">
+                  <span className="text-sm font-medium text-slate-600">
+                    Permissions
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowEditOptionsDropdown((prev) => !prev)}
+                    className="flex w-full items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none hover:border-slate-400"
+                  >
+                    <span>
+                      {selectedEditOptionIds.length > 0
+                        ? `${selectedEditOptionIds.length} option(s) selected`
+                        : "Select options"}
+                    </span>
+                    <ChevronRight
+                      className={`size-4 transition-transform ${
+                        showEditOptionsDropdown ? "rotate-90" : ""
+                      }`}
+                    />
+                  </button>
+                  {showEditOptionsDropdown && (
+                    <div className="absolute z-50 mt-2 w-full max-w-sm rounded-2xl border border-slate-200 bg-white py-2 shadow-lg">
+                      <ul className="max-h-48 overflow-y-auto">
+                        {mockEditOptions.map((option) => (
+                          <li
+                            key={option.id}
+                            className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                          >
+                            <input
+                              type="checkbox"
+                              className="rounded border-slate-300"
+                              checked={selectedEditOptionIds.includes(
+                                option.id
+                              )}
+                              onChange={() => toggleEditOption(option.id)}
+                            />
+                            <span>{option.label}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-3 pt-4">
                 <button
@@ -961,7 +1045,9 @@ const UsersPage = () => {
                 </div>
                 <div>
                   <h2 className="text-2xl font-semibold">Update password</h2>
-                  <p className="text-sm text-slate-500">Set a new password for this user</p>
+                  <p className="text-sm text-slate-500">
+                    Set a new password for this user
+                  </p>
                 </div>
               </div>
               <button
@@ -987,7 +1073,10 @@ const UsersPage = () => {
                   type="password"
                   value={passwordForm.password}
                   onChange={(e) =>
-                    setPasswordForm((prev) => ({ ...prev, password: e.target.value }))
+                    setPasswordForm((prev) => ({
+                      ...prev,
+                      password: e.target.value,
+                    }))
                   }
                   placeholder="••••••••"
                   className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
@@ -1069,7 +1158,9 @@ const UsersPage = () => {
 
             <form onSubmit={handleSubmitRole} className="space-y-4">
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-600">Role *</span>
+                <span className="text-sm font-medium text-slate-600">
+                  Role *
+                </span>
                 <select
                   value={userForm.roleId}
                   onChange={(e) =>
@@ -1129,8 +1220,8 @@ const UsersPage = () => {
               </div>
             </div>
             <p className="mb-6 text-slate-600">
-              Are you sure you want to delete this user? All associated data will be
-              permanently removed.
+              Are you sure you want to delete this user? All associated data
+              will be permanently removed.
             </p>
             <div className="flex items-center gap-3">
               <button

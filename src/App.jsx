@@ -5,7 +5,11 @@ import SignUpPage from "./pages/auth/signUp";
 import "./App.css";
 import BaseLayout from "./layout/baseLayout";
 import PermissionPage from "./pages/permission";
-import UsersPage from "./pages/users"
+import UsersPage from "./pages/users";
+import ProtectedRoute from "./routes/ProtectedRoute";
+
+const adminRoles = ["Admin", "Security Director"];
+const managementRoles = ["Admin", "Manager", "Security Director"];
 
 function App() {
   return (
@@ -26,9 +30,34 @@ function App() {
           </BaseLayout>
         }
       />
-      <Route path="/sign-up" element={<SignUpPage />} />
-      <Route path="/permission" element={<BaseLayout><PermissionPage/></BaseLayout>} />
-      <Route path="/users" element={<BaseLayout><UsersPage/></BaseLayout>} />
+      <Route
+        path="/sign-up"
+        element={
+          <BaseLayout>
+            <SignUpPage />
+          </BaseLayout>
+        }
+      />
+      <Route
+        path="/permission"
+        element={
+          <ProtectedRoute allowedRoles={adminRoles} fallbackPath="/sign-in">
+            <BaseLayout>
+              <PermissionPage />
+            </BaseLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/users"
+        element={
+          <ProtectedRoute allowedRoles={managementRoles} fallbackPath="/sign-in">
+            <BaseLayout>
+              <UsersPage />
+            </BaseLayout>
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

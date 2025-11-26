@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import axiosInstance from "../../../lib/axios";
+import axiosInstance from "../../../lib/axiosInstance";
 import { setCredentials } from "../../../store/userSlice";
 
 const features = [
@@ -39,7 +39,6 @@ export default function SignInPage() {
       dispatch(
         setCredentials({
           token: response.data?.accessToken || "",
-          user: response.data?.data || null,
         })
       );
       setSuccess("Authentication successful. Redirecting…");
