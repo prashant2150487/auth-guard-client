@@ -1,20 +1,14 @@
 import { useMemo, useState, useEffect } from "react";
-import {
-  UserPlus,
-  Edit2,
-  Trash2,
-  Search,
-  RefreshCcw,
-  Key,
-  Shield,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  Check,
-  AlertCircle,
-} from "lucide-react";
+import { UserPlus, Trash2, Search, RefreshCcw } from "lucide-react";
 import axiosInstance from "../../lib/axiosInstance";
-import { toDate } from "../../utils/helper/dateTimeHelper";
+import UsersTable from "./components/UsersTable";
+import UsersStats from "./components/UsersStats";
+import CreateUserModal from "./components/CreateUserModal";
+import EditUserModal from "./components/EditUserModal";
+import PasswordModal from "./components/PasswordModal";
+import RoleModal from "./components/RoleModal";
+import DeleteUserModal from "./components/DeleteUserModal";
+import BulkDeleteModal from "./components/BulkDeleteModal";
 
 const mockRoles = [
   { id: "1", name: "Admin" },
@@ -479,34 +473,9 @@ const UsersPage = () => {
       )}
 
       {/* Statistics Cards */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <article className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Total users</p>
-          <p className="mt-2 text-3xl font-semibold text-slate-900">
-            {stats.total}
-          </p>
-        </article>
-        <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-          <p className="text-sm text-emerald-700">Active</p>
-          <p className="mt-2 text-3xl font-semibold text-emerald-800">
-            {stats.active}
-          </p>
-        </article>
-        <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-          <p className="text-sm text-slate-600">Inactive</p>
-          <p className="mt-2 text-3xl font-semibold text-slate-800">
-            {stats.inactive}
-          </p>
-        </article>
-        <article className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
-          <p className="text-sm text-blue-700">Roles</p>
-          <p className="mt-2 text-3xl font-semibold text-blue-800">
-            {Object.keys(stats.byRole).length}
-          </p>
-        </article>
-      </section>
+      <UsersStats stats={stats} />
 
-      {/* Filters and Search */}
+      {/* Filters, Search & Users Table */}
       <section className="rounded-3xl border border-slate-200 bg-white px-6 py-6 shadow-sm">
         <div className="flex flex-wrap items-center gap-4">
           <div className="relative flex-1 min-w-64">
@@ -548,748 +517,129 @@ const UsersPage = () => {
           </select>
         </div>
 
-        {/* Users Table */}
-        <div className="mt-6 overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-100 text-left text-sm">
-            <thead>
-              <tr className="text-slate-500">
-                <th className="py-3 pr-4">
-                  <input
-                    type="checkbox"
-                    checked={
-                      paginatedUsers?.length > 0 &&
-                      selectedUserIds.length === paginatedUsers.length
-                    }
-                    onChange={toggleSelectAll}
-                    className="rounded border-slate-300"
-                  />
-                </th>
-                <th className="py-3 pr-4 font-medium">User</th>
-                <th className="py-3 pr-4 font-medium">Email</th>
-                <th className="py-3 pr-4 font-medium">Role</th>
-                <th className="py-3 pr-4 font-medium">Status</th>
-                <th className="py-3 pr-4 font-medium">Last login</th>
-                <th className="py-3 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="py-10 text-center text-slate-500">
-                    Loading...
-                  </td>
-                </tr>
-              ) : paginatedUsers?.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-10 text-center text-slate-500">
-                    No users found. Create a new user to get started.
-                  </td>
-                </tr>
-              ) : (
-                paginatedUsers?.map((user) => (
-                  <tr key={user.id} className="hover:bg-slate-50">
-                    <td className="py-4 pr-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedUserIds.includes(user.id)}
-                        onChange={() => toggleUserSelection(user.id)}
-                        className="rounded border-slate-300"
-                      />
-                    </td>
-                    <td className="py-4 pr-4">
-                      <p className="font-semibold text-slate-900 capitalize">
-                        {user.name}
-                      </p>
-                    </td>
-                    <td className="py-4 pr-4 text-slate-600">{user.email}</td>
-                    <td className="py-4 pr-4">
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                        {user?.Role?.name}
-                      </span>
-                    </td>
-                    <td className="py-4 pr-4">
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${
-                          statusColors[user.status] || statusColors.inactive
-                        }`}
-                      >
-                        {user.status === "active" ? (
-                          <Check className="size-3" />
-                        ) : (
-                          <X className="size-3" />
-                        )}
-                        {/* {user?.status?.charAt(0)?.toUpperCase() + user?.status?.slice(1)} */}
-                      </span>
-                    </td>
-                    <td className="py-4 pr-4 text-slate-500 text-xs">
-                      {user?.createdAt?.split("T")?.[0]}
-                    </td>
-                    <td className="py-4 text-right">
-                      <div className="inline-flex items-center gap-2">
-                        <button
-                          type="button"
-                          // disabled
-                          onClick={() => handleEdit(user)}
-                          className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400"
-                          title="Edit user"
-                        >
-                          <Edit2 className="size-4" />
-                        </button>
-                        <button
-                          type="button"
-                          // disabled
-                          onClick={() => handlePasswordUpdate(user.id)}
-                          className="rounded-xl border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-600 hover:border-blue-400"
-                          title="Update password"
-                        >
-                          <Key className="size-4" />
-                        </button>
-                        <button
-                          type="button"
-                          // disabled
-                          onClick={() => handleRoleUpdate(user)}
-                          className="rounded-xl border border-purple-200 px-3 py-2 text-xs font-semibold text-purple-600 hover:border-purple-400"
-                          title="Update role"
-                        >
-                          <Shield className="size-4" />
-                        </button>
-                        <button
-                          type="button"
-                          // disabled
-                          onClick={() => handleDelete(user.id)}
-                          className="rounded-xl border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-600 hover:border-rose-400"
-                          title="Delete user"
-                        >
-                          <Trash2 className="size-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="mt-6 flex items-center justify-between">
-            <p className="text-sm text-slate-600">
-              Showing {(currentPage - 1) * pageSize + 1} to{" "}
-              {Math.min(currentPage * pageSize, filteredUsers.length)} of{" "}
-              {filteredUsers.length} users
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft className="size-4" />
-              </button>
-              <span className="text-sm text-slate-600">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                type="button"
-                onClick={() =>
-                  setCurrentPage((p) => Math.min(totalPages, p + 1))
-                }
-                disabled={currentPage === totalPages}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronRight className="size-4" />
-              </button>
-            </div>
-          </div>
-        )}
+        <UsersTable
+          loading={loading}
+          paginatedUsers={paginatedUsers}
+          filteredUsers={filteredUsers}
+          statusColors={statusColors}
+          selectedUserIds={selectedUserIds}
+          toggleSelectAll={toggleSelectAll}
+          toggleUserSelection={toggleUserSelection}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          setCurrentPage={setCurrentPage}
+          handleEdit={handleEdit}
+          handlePasswordUpdate={handlePasswordUpdate}
+          handleRoleUpdate={handleRoleUpdate}
+          handleDelete={handleDelete}
+        />
       </section>
 
-      {/* Create User Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex size-12 items-center justify-center rounded-2xl bg-slate-900/5 text-slate-900">
-                  <UserPlus className="size-6" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-semibold">Create new user</h2>
-                  <p className="text-sm text-slate-500">
-                    Add a new user to the system
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setUserForm(emptyUser);
-                  setError("");
-                }}
-                className="rounded-xl p-2 hover:bg-slate-100"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
+      <CreateUserModal
+        open={showCreateModal}
+        loading={loading}
+        userForm={userForm}
+        mockRoles={mockRoles}
+        onClose={() => {
+          setShowCreateModal(false);
+          setUserForm(emptyUser);
+          setError("");
+        }}
+        onChange={(patch) =>
+          setUserForm((prev) => ({
+            ...prev,
+            ...patch,
+          }))
+        }
+        onSubmit={handleSubmitCreate}
+      />
 
-            <form onSubmit={handleSubmitCreate} className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="space-y-2">
-                  <span className="text-sm font-medium text-slate-600">
-                    Full name *
-                  </span>
-                  <input
-                    type="text"
-                    value={userForm.name}
-                    onChange={(e) =>
-                      setUserForm((prev) => ({ ...prev, name: e.target.value }))
-                    }
-                    placeholder="John Doe"
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
-                    required
-                  />
-                </label>
-                <label className="space-y-2">
-                  <span className="text-sm font-medium text-slate-600">
-                    Email address *
-                  </span>
-                  <input
-                    type="email"
-                    value={userForm.email}
-                    onChange={(e) =>
-                      setUserForm((prev) => ({
-                        ...prev,
-                        email: e.target.value,
-                      }))
-                    }
-                    placeholder="john.doe@guard.com"
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
-                    required
-                  />
-                </label>
-                <label className="space-y-2">
-                  <span className="text-sm font-medium text-slate-600">
-                    Password *
-                  </span>
-                  <input
-                    type="password"
-                    value={userForm.password}
-                    onChange={(e) =>
-                      setUserForm((prev) => ({
-                        ...prev,
-                        password: e.target.value,
-                      }))
-                    }
-                    placeholder="••••••••"
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
-                    required
-                  />
-                </label>
-                <label className="space-y-2">
-                  <span className="text-sm font-medium text-slate-600">
-                    Role *
-                  </span>
-                  <select
-                    value={userForm.roleId}
-                    onChange={(e) =>
-                      setUserForm((prev) => ({
-                        ...prev,
-                        roleId: e.target.value,
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
-                    required
-                  >
-                    <option value="">Select role</option>
-                    {mockRoles.map((role) => (
-                      <option key={role.id} value={role.id}>
-                        {role.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="space-y-2">
-                  <span className="text-sm font-medium text-slate-600">
-                    Status
-                  </span>
-                  <select
-                    value={userForm.status}
-                    onChange={(e) =>
-                      setUserForm((prev) => ({
-                        ...prev,
-                        status: e.target.value,
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="suspended">Suspended</option>
-                  </select>
-                </label>
-                {/* Extra dropdown with checkbox options (static data) */}
-              </div>
-              <div className="flex items-center gap-3 pt-4">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white disabled:opacity-50"
-                >
-                  <UserPlus className="size-4" />
-                  Create user
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setUserForm(emptyUser);
-                    setError("");
-                  }}
-                  className="rounded-2xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 hover:border-slate-400"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <EditUserModal
+        open={showEditModal}
+        loading={loading}
+        userForm={userForm}
+        mockRoles={mockRoles}
+        mockEditOptions={mockEditOptions}
+        selectedEditOptionIds={selectedEditOptionIds}
+        showEditOptionsDropdown={showEditOptionsDropdown}
+        onClose={() => {
+          setShowEditModal(false);
+          setUserForm(emptyUser);
+          setSelectedUserId(null);
+          setError("");
+        }}
+        onChange={(patch) =>
+          setUserForm((prev) => ({
+            ...prev,
+            ...patch,
+          }))
+        }
+        onSubmit={handleSubmitEdit}
+        onToggleDropdown={() =>
+          setShowEditOptionsDropdown((prev) => !prev)
+        }
+        onToggleOption={toggleEditOption}
+      />
 
-      {/* Edit User Modal */}
-      {showEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex size-12 items-center justify-center rounded-2xl bg-slate-900/5 text-slate-900">
-                  <Edit2 className="size-6" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-semibold">Edit user</h2>
-                  <p className="text-sm text-slate-500">
-                    Update user information
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowEditModal(false);
-                  setUserForm(emptyUser);
-                  setSelectedUserId(null);
-                  setError("");
-                }}
-                className="rounded-xl p-2 hover:bg-slate-100"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
+      <PasswordModal
+        open={showPasswordModal}
+        loading={loading}
+        passwordForm={passwordForm}
+        onClose={() => {
+          setShowPasswordModal(false);
+          setPasswordForm({ password: "", confirmPassword: "" });
+          setSelectedUserId(null);
+          setError("");
+        }}
+        onChange={(patch) =>
+          setPasswordForm((prev) => ({
+            ...prev,
+            ...patch,
+          }))
+        }
+        onSubmit={handleSubmitPassword}
+      />
 
-            <form onSubmit={handleSubmitEdit} className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="space-y-2">
-                  <span className="text-sm font-medium text-slate-600">
-                    Full name *
-                  </span>
-                  <input
-                    type="text"
-                    value={userForm.name}
-                    onChange={(e) =>
-                      setUserForm((prev) => ({ ...prev, name: e.target.value }))
-                    }
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
-                    required
-                  />
-                </label>
-                <label className="space-y-2">
-                  <span className="text-sm font-medium text-slate-600">
-                    Email address *
-                  </span>
-                  <input
-                    type="email"
-                    value={userForm.email}
-                    onChange={(e) =>
-                      setUserForm((prev) => ({
-                        ...prev,
-                        email: e.target.value,
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
-                    required
-                  />
-                </label>
-                <label className="space-y-2">
-                  <span className="text-sm font-medium text-slate-600">
-                    Role *
-                  </span>
-                  <select
-                    value={userForm.roleId}
-                    onChange={(e) =>
-                      setUserForm((prev) => ({
-                        ...prev,
-                        roleId: e.target.value,
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
-                    required
-                  >
-                    <option value="">Select role</option>
-                    {mockRoles.map((role) => (
-                      <option key={role.id} value={role.id}>
-                        {role.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="space-y-2">
-                  <span className="text-sm font-medium text-slate-600">
-                    Status
-                  </span>
-                  <select
-                    value={userForm.status}
-                    onChange={(e) =>
-                      setUserForm((prev) => ({
-                        ...prev,
-                        status: e.target.value,
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="suspended">Suspended</option>
-                  </select>
-                </label>
-                <div className="space-y-2 md:col-span-2 relative">
-                  <span className="text-sm font-medium text-slate-600">
-                    Permissions
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowEditOptionsDropdown((prev) => !prev)}
-                    className="flex w-full items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none hover:border-slate-400"
-                  >
-                    <span>
-                      {selectedEditOptionIds.length > 0
-                        ? `${selectedEditOptionIds.length} option(s) selected`
-                        : "Select options"}
-                    </span>
-                    <ChevronRight
-                      className={`size-4 transition-transform ${
-                        showEditOptionsDropdown ? "rotate-90" : ""
-                      }`}
-                    />
-                  </button>
-                  {showEditOptionsDropdown && (
-                    <div className="absolute z-50 mt-2 w-full max-w-sm rounded-2xl border border-slate-200 bg-white py-2 shadow-lg">
-                      <ul className="max-h-48 overflow-y-auto">
-                        {mockEditOptions.map((option) => (
-                          <li
-                            key={option.id}
-                            className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                          >
-                            <input
-                              type="checkbox"
-                              className="rounded border-slate-300"
-                              checked={selectedEditOptionIds.includes(
-                                option.id
-                              )}
-                              onChange={() => toggleEditOption(option.id)}
-                            />
-                            <span>{option.label}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-3 pt-4">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white disabled:opacity-50"
-                >
-                  <Edit2 className="size-4" />
-                  Update user
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setUserForm(emptyUser);
-                    setSelectedUserId(null);
-                    setError("");
-                  }}
-                  className="rounded-2xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 hover:border-slate-400"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <RoleModal
+        open={showRoleModal}
+        loading={loading}
+        userForm={userForm}
+        mockRoles={mockRoles}
+        onClose={() => {
+          setShowRoleModal(false);
+          setUserForm(emptyUser);
+          setSelectedUserId(null);
+          setError("");
+        }}
+        onChange={(patch) =>
+          setUserForm((prev) => ({
+            ...prev,
+            ...patch,
+          }))
+        }
+        onSubmit={handleSubmitRole}
+      />
 
-      {/* Update Password Modal */}
-      {showPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex size-12 items-center justify-center rounded-2xl bg-blue-900/5 text-blue-900">
-                  <Key className="size-6" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-semibold">Update password</h2>
-                  <p className="text-sm text-slate-500">
-                    Set a new password for this user
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowPasswordModal(false);
-                  setPasswordForm({ password: "", confirmPassword: "" });
-                  setSelectedUserId(null);
-                  setError("");
-                }}
-                className="rounded-xl p-2 hover:bg-slate-100"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
+      <DeleteUserModal
+        open={showDeleteModal}
+        loading={loading}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setSelectedUserId(null);
+        }}
+        onConfirm={() => deleteUser(selectedUserId)}
+      />
 
-            <form onSubmit={handleSubmitPassword} className="space-y-4">
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-600">
-                  New password *
-                </span>
-                <input
-                  type="password"
-                  value={passwordForm.password}
-                  onChange={(e) =>
-                    setPasswordForm((prev) => ({
-                      ...prev,
-                      password: e.target.value,
-                    }))
-                  }
-                  placeholder="••••••••"
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
-                  required
-                />
-              </label>
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-600">
-                  Confirm password *
-                </span>
-                <input
-                  type="password"
-                  value={passwordForm.confirmPassword}
-                  onChange={(e) =>
-                    setPasswordForm((prev) => ({
-                      ...prev,
-                      confirmPassword: e.target.value,
-                    }))
-                  }
-                  placeholder="••••••••"
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
-                  required
-                />
-              </label>
-              <div className="flex items-center gap-3 pt-4">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white disabled:opacity-50"
-                >
-                  <Key className="size-4" />
-                  Update password
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPasswordModal(false);
-                    setPasswordForm({ password: "", confirmPassword: "" });
-                    setSelectedUserId(null);
-                    setError("");
-                  }}
-                  className="rounded-2xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 hover:border-slate-400"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Update Role Modal */}
-      {showRoleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex size-12 items-center justify-center rounded-2xl bg-purple-900/5 text-purple-900">
-                  <Shield className="size-6" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-semibold">Update role</h2>
-                  <p className="text-sm text-slate-500">Change user's role</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowRoleModal(false);
-                  setUserForm(emptyUser);
-                  setSelectedUserId(null);
-                  setError("");
-                }}
-                className="rounded-xl p-2 hover:bg-slate-100"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmitRole} className="space-y-4">
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-600">
-                  Role *
-                </span>
-                <select
-                  value={userForm.roleId}
-                  onChange={(e) =>
-                    setUserForm((prev) => ({ ...prev, roleId: e.target.value }))
-                  }
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
-                  required
-                >
-                  <option value="">Select role</option>
-                  {mockRoles.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="flex items-center gap-3 pt-4">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-purple-600 px-6 py-3 text-sm font-semibold text-white disabled:opacity-50"
-                >
-                  <Shield className="size-4" />
-                  Update role
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowRoleModal(false);
-                    setUserForm(emptyUser);
-                    setSelectedUserId(null);
-                    setError("");
-                  }}
-                  className="rounded-2xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 hover:border-slate-400"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Delete User Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
-            <div className="mb-6 flex items-center gap-3">
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-900/5 text-rose-900">
-                <AlertCircle className="size-6" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-semibold">Delete user</h2>
-                <p className="text-sm text-slate-500">
-                  This action cannot be undone
-                </p>
-              </div>
-            </div>
-            <p className="mb-6 text-slate-600">
-              Are you sure you want to delete this user? All associated data
-              will be permanently removed.
-            </p>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => deleteUser(selectedUserId)}
-                disabled={loading}
-                className="inline-flex items-center gap-2 rounded-2xl bg-rose-600 px-6 py-3 text-sm font-semibold text-white disabled:opacity-50"
-              >
-                <Trash2 className="size-4" />
-                Delete user
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setSelectedUserId(null);
-                }}
-                className="rounded-2xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 hover:border-slate-400"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk Delete Modal */}
-      {showBulkDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
-            <div className="mb-6 flex items-center gap-3">
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-900/5 text-rose-900">
-                <AlertCircle className="size-6" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-semibold">Delete users</h2>
-                <p className="text-sm text-slate-500">
-                  This action cannot be undone
-                </p>
-              </div>
-            </div>
-            <p className="mb-6 text-slate-600">
-              Are you sure you want to delete {selectedUserIds.length} selected
-              user(s)? All associated data will be permanently removed.
-            </p>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => bulkDeleteUsers(selectedUserIds)}
-                disabled={loading}
-                className="inline-flex items-center gap-2 rounded-2xl bg-rose-600 px-6 py-3 text-sm font-semibold text-white disabled:opacity-50"
-              >
-                <Trash2 className="size-4" />
-                Delete {selectedUserIds.length} user(s)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowBulkDeleteModal(false);
-                }}
-                className="rounded-2xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 hover:border-slate-400"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <BulkDeleteModal
+        open={showBulkDeleteModal}
+        loading={loading}
+        count={selectedUserIds.length}
+        onClose={() => {
+          setShowBulkDeleteModal(false);
+        }}
+        onConfirm={() => bulkDeleteUsers(selectedUserIds)}
+      />
     </section>
   );
 };
