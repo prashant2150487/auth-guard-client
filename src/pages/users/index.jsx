@@ -47,6 +47,7 @@ const UsersPage = () => {
     inactive: 0,
     byRole: {},
   });
+  const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -133,6 +134,17 @@ const UsersPage = () => {
       setLoading(false);
     }
   };
+  const fetchPermission = async () => {
+    try {
+      const response = await axiosInstance("/api/permissions/");
+      if (response.data.success) {
+        setPermissions(response.data?.data?.permissions);
+      }
+    } catch (err) {
+      console.log(error.message);
+    }
+  };
+  console.log(permissions)
 
   const fetchUserStats = async () => {
     try {
@@ -410,6 +422,7 @@ const UsersPage = () => {
   useEffect(() => {
     fetchUsers();
     fetchUserStats();
+    fetchPermission()
   }, []);
 
   return (
@@ -558,6 +571,7 @@ const UsersPage = () => {
       <EditUserModal
         open={showEditModal}
         loading={loading}
+        permissions={permissions}
         userForm={userForm}
         mockRoles={mockRoles}
         mockEditOptions={mockEditOptions}
@@ -576,9 +590,7 @@ const UsersPage = () => {
           }))
         }
         onSubmit={handleSubmitEdit}
-        onToggleDropdown={() =>
-          setShowEditOptionsDropdown((prev) => !prev)
-        }
+        onToggleDropdown={() => setShowEditOptionsDropdown((prev) => !prev)}
         onToggleOption={toggleEditOption}
       />
 

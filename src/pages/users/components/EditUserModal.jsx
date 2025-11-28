@@ -3,6 +3,7 @@ import { Edit2, X, ChevronRight } from "lucide-react";
 const EditUserModal = ({
   open,
   loading,
+  permissions,
   userForm,
   mockRoles,
   mockEditOptions,
@@ -81,9 +82,7 @@ const EditUserModal = ({
               </select>
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-600">
-                Status
-              </span>
+              <span className="text-sm font-medium text-slate-600">Status</span>
               <select
                 value={userForm.status}
                 onChange={(e) => onChange({ status: e.target.value })}
@@ -117,6 +116,18 @@ const EditUserModal = ({
               {showEditOptionsDropdown && (
                 <div className="absolute z-50 mt-2 w-full max-w-sm rounded-2xl border border-slate-200 bg-white py-2 shadow-lg">
                   <ul className="max-h-48 overflow-y-auto">
+                    {permissions.map((permission) => (
+                      <li
+                        key={permission?.id}
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                      >
+                        <input
+                          type="checkbox"
+                          className="rounded border-slate-300"
+                        />
+                        <span>{permission?.name}</span>
+                      </li>
+                    ))}
                     {mockEditOptions.map((option) => (
                       <li
                         key={option.id}
@@ -160,5 +171,3 @@ const EditUserModal = ({
 };
 
 export default EditUserModal;
-
-
