@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axiosInstance from "../../../lib/axiosInstance";
 import UsersLoader from "./UsersLoader";
+import toast from "react-hot-toast";
 
 const PermissionsModal = ({ open, user, onClose }) => {
   const [permissions, setPermissions] = useState([]);
@@ -49,6 +50,7 @@ const PermissionsModal = ({ open, user, onClose }) => {
   }
 
   const togglePermission = (id) => {
+    console.log(id, "id");
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id]
     );
@@ -58,11 +60,15 @@ const PermissionsModal = ({ open, user, onClose }) => {
     setSaving(true);
     setError("");
     try {
-      await axiosInstance.post(
+      const res = await axiosInstance.post(
         `/api/user-management/${user.id}/permissions/bulk`,
         { permissionIds: selectedIds }
       );
-      onClose();
+      if (res.data.success) {
+        toast.success(res.data.message);
+        onClose();
+      }
+
     } catch (err) {
       setError(
         err?.response?.data?.message || "Failed to update user permissions"
@@ -72,8 +78,9 @@ const PermissionsModal = ({ open, user, onClose }) => {
     }
   };
 
-  const assignedCount = permissions.filter((p) => selectedIds.includes(p.id))
-    .length;
+  const assignedCount = permissions.filter((p) =>
+    selectedIds.includes(p.id)
+  ).length;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -167,5 +174,3 @@ const PermissionsModal = ({ open, user, onClose }) => {
 };
 
 export default PermissionsModal;
-
-
