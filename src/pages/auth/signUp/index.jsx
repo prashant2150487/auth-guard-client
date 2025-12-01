@@ -44,7 +44,6 @@ export default function SignUpPage() {
         phone,
       });
 
-      console.log(response);
       if (response.data.success) {
         toast.success("Account created successfully!");
       }

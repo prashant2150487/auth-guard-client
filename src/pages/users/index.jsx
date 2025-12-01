@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 import { RefreshCcw } from "lucide-react";
 import axiosInstance from "../../lib/axiosInstance";
 import UsersTable from "./components/UsersTable";
+import PermissionsModal from "./components/PermissionsModal";
 
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showPermissionsModal, setShowPermissionsModal] = useState(false);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -28,6 +31,16 @@ const UsersPage = () => {
 
   const handleRefresh = () => {
     fetchUsers();
+  };
+
+  const handleAssignPermissions = (user) => {
+    setSelectedUser(user);
+    setShowPermissionsModal(true);
+  };
+
+  const handleClosePermissionsModal = () => {
+    setShowPermissionsModal(false);
+    setSelectedUser(null);
   };
 
   return (
@@ -62,7 +75,17 @@ const UsersPage = () => {
         </div>
       )}
 
-      <UsersTable users={users} loading={loading} />
+      <UsersTable
+        users={users}
+        loading={loading}
+        onAssignPermissions={handleAssignPermissions}
+      />
+
+      <PermissionsModal
+        open={showPermissionsModal}
+        user={selectedUser}
+        onClose={handleClosePermissionsModal}
+      />
     </section>
   );
 };

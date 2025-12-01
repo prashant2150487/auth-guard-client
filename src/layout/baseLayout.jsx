@@ -11,14 +11,12 @@ const BaseLayout = ({ children }) => {
 
   const fetchUserData = async () => {
     const res = await axiosInstance("/api/auth/meta");
-    console.log(res,"res")
     dispatch(
       setCredentials({
         user: res.data.data?.user || null,
       })
     );
 
-    console.log(res);
   };
   useEffect(() => {
     fetchUserData();

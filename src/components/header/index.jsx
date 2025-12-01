@@ -19,7 +19,6 @@ const Header = () => {
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
 
-  console.log(isLoggedIn, "is");
 
   const toggleMenu = () => setIsOpen((prev) => !prev);
   const closeMenu = () => setIsOpen(false);
@@ -93,12 +92,12 @@ const Header = () => {
           >
             Pricing
           </a>
-          <a
-            href="#docs"
+          <Link
+            to="/docs"
             className="text-sm text-white/70 hover:text-white transition"
           >
             Documentation
-          </a>
+          </Link>
         </nav>
 
         {/* Auth Buttons */}

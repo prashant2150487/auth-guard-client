@@ -27,10 +27,24 @@ body {
   margin: 0;
   min-width: 320px;
 }
-
-
-
-
+button {
+  cursor: pointer;
+}
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+td,
+th,
+tr,
+input[type="checkbox"],
+span {
+  caret-color: transparent;
+  user-select: text; /* keeps text selectable */
+}
 
 @media (prefers-color-scheme: light) {
   :root {

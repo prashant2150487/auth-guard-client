@@ -35,7 +35,6 @@ export default function SignInPage() {
         email,
         password,
       });
-      console.log(response);
       dispatch(
         setCredentials({
           token: response.data?.accessToken || "",
