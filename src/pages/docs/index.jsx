@@ -1,40 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import CreateProductModal from "./CreateProductModal";
+import axiosInstance from "../../lib/axiosInstance";
+import { toast } from "react-hot-toast";
 
-const docsSections = [
-  {
-    id: "project-users",
-    title: "Guard Users Project",
-    permission: "users.read",
-    description:
-      "Project overview for managing users: onboarding flows, account lifecycle, and directory views.",
-    link: "/docs/users-project",
-  },
-  {
-    id: "project-permissions",
-    title: "Guard Permissions Project",
-    permission: "permissions.read",
-    description:
-      "Project describing permission models, assign flows, and audit trails across the platform.",
-    link: "/docs/permissions-project",
-  },
-  {
-    id: "project-roles",
-    title: "Guard Roles Project",
-    permission: "roles.read",
-    description:
-      "Project for defining roles, mapping permissions, and structuring access for teams.",
-    link: "/docs/roles-project",
-  },
-];
 
 const DocsPage = () => {
   const user = useSelector((state) => state.user.user);
   const userPermissions = user?.Permissions?.map((p) => p.name) || [];
 
-  const [customProjects, setCustomProjects] = useState([]);
+  const [products, setProducts] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const hasPermission = (perm) =>
@@ -42,7 +18,6 @@ const DocsPage = () => {
 
   const canCreateProduct = hasPermission("permissions.create");
 
-  const allSections = [...docsSections, ...customProjects];
 
   const handleCreateProductClick = () => {
     setShowCreateModal(true);
@@ -51,20 +26,37 @@ const DocsPage = () => {
   const handleCloseCreateModal = () => {
     setShowCreateModal(false);
   };
+  const fetchAllProduct = async () => {
+    try {
+      const response = await axiosInstance.get("/api/products/");
+      setProducts(response.data.data.products);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      toast.error(error.response?.data?.message || "Error fetching products", {
+        id: "fetch-products-error", // Prevents duplicate toasts
+      });
+    }
+  }
+  useEffect(() => {
+    fetchAllProduct();
+  }, []);
 
-  const handleSaveProduct = ({ title, subtitle, description, permission }) => {
-    const newProject = {
-      id: `custom-${Date.now()}`,
-      title,
-      permission,
-      description: subtitle
-        ? `${subtitle} — ${description}`
-        : description,
-      link: "#", // can be wired to a dedicated route later
-    };
-    setCustomProjects((prev) => [...prev, newProject]);
-    setShowCreateModal(false);
+  const handleSaveProduct = async ({ title, subtitle, description, permission }) => {
+    try {
+      const response = await axiosInstance.post("/api/products/", {
+        title,
+        subtitle,
+        description,
+        permission,
+      });
+      setProducts((prev) => [...prev, response.data.data.product]);
+      setShowCreateModal(false);
+    } catch (error) {
+      toast.error("Error creating product:", error);
+      throw error; // so error flows back to modal
+    }
   };
+
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10">
@@ -93,7 +85,7 @@ const DocsPage = () => {
       </header>
 
       <section className="grid gap-4 md:grid-cols-2">
-        {allSections.map((section) => {
+        {products.map((section) => {
           const allowed = hasPermission(section.permission);
           return (
             <article
@@ -116,15 +108,14 @@ const DocsPage = () => {
               </div>
               <div className="mt-4">
                 <Link
-                  to={allowed ? section.link : "#"}
+                  to={allowed ? `/pdp/${section.id}` : "#"}
                   onClick={(e) => {
                     if (!allowed) e.preventDefault();
                   }}
-                  className={`inline-flex items-center rounded-xl px-4 py-2 text-xs font-semibold ${
-                    allowed
-                      ? "bg-slate-900 text-white hover:bg-slate-800"
-                      : "border border-slate-200 text-slate-400 cursor-not-allowed"
-                  }`}
+                  className={`inline-flex items-center rounded-xl px-4 py-2 text-xs font-semibold ${allowed
+                    ? "bg-green-400 text-white hover:bg-slate-800"
+                    : "border border-slate-200 text-slate-400 cursor-not-allowed"
+                    }`}
                 >
                   {allowed ? "Open" : "No access"}
                 </Link>

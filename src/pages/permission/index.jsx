@@ -5,6 +5,7 @@ import CreatePermissionModal from "./CreatePermissionModal";
 import PermissionsTable from "./PermissionsTable";
 import EditPermissionModal from "./EditPermissionModal";
 import DeletePermissionModal from "./DeletePermissionModal";
+import toast from "react-hot-toast";
 
 export default function PermissionPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -51,15 +52,18 @@ export default function PermissionPage() {
     try {
       setCreating(true);
       setError("");
-      await axiosInstance.post("/api/permissions", payload);
+      const res=await axiosInstance.post("/api/permissions", payload);
+      toast.success(res?.data?.message);
       await fetchPermissions();
       setShowCreateModal(false);
     } catch (err) {
       setError(
         err?.response?.data?.message || "Failed to create permission"
       );
+      toast.error(err?.response?.data?.message);
     } finally {
       setCreating(false);
+
     }
   };
 

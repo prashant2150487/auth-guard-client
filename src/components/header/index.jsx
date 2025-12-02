@@ -93,10 +93,10 @@ const Header = () => {
             Pricing
           </a>
           <Link
-            to="/docs"
+            to="/plp"
             className="text-sm text-white/70 hover:text-white transition"
           >
-            Documentation
+            Products
           </Link>
         </nav>
 
